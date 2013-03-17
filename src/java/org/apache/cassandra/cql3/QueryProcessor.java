@@ -204,17 +204,17 @@ public class QueryProcessor
         logger.trace("CQL QUERY: {}", queryString);
 
         ParsedStatement.Prepared prepared = getStatement(queryString, clientState);
-        ResultMessage.Prepared msg = storePreparedStatement(queryString, prepared, forThrift);
+        ResultMessage.Prepared msg = storePreparedStatement(queryString, clientState.getKeyspace(), prepared, forThrift);
 
         assert prepared.statement.getBoundsTerms() == prepared.boundNames.size();
         return msg;
     }
 
-    private static ResultMessage.Prepared storePreparedStatement(String queryString, ParsedStatement.Prepared prepared, boolean forThrift)
+    private static ResultMessage.Prepared storePreparedStatement(String queryString, String keyspace, ParsedStatement.Prepared prepared, boolean forThrift)
     {
         if (forThrift)
         {
-            int statementId = queryString.hashCode();
+            int statementId = queryString.hashCode() + keyspace.hashCode();
             thriftPreparedStatements.put(statementId, prepared.statement);
             logger.trace(String.format("Stored prepared statement #%d with %d bind markers",
                                        statementId,
@@ -223,7 +223,7 @@ public class QueryProcessor
         }
         else
         {
-            MD5Digest statementId = MD5Digest.compute(queryString);
+            MD5Digest statementId = MD5Digest.compute(queryString + keyspace);
             logger.trace(String.format("Stored prepared statement %s with %d bind markers",
                                        statementId,
                                        prepared.statement.getBoundsTerms()));
